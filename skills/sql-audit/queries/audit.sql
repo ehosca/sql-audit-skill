@@ -1,5 +1,5 @@
 /* =============================================================================
-   Celko SQL Programming Style — Database Audit
+   Celko SQL Programming Style - Database Audit
    -----------------------------------------------------------------------------
    Read-only. Queries the system catalog and sys.sql_modules only.
    Emits ONE result set: (severity, rule_id, rule_name, schema_name,
@@ -15,7 +15,7 @@
      * Rules N06 and D07 use STRING_AGG (SQL Server 2017+). If targeting an
        older engine, comment those two blocks out.
      * Module-text rules (V01, C02, C03, C04) are heuristic and may match text
-       inside comments or string literals — the skill reviews flagged modules.
+       inside comments or string literals - the skill reviews flagged modules.
    ============================================================================= */
 SET NOCOUNT ON;
 
@@ -202,7 +202,7 @@ WHERE o.is_ms_shipped = 0 AND i.is_primary_key = 1 AND ty.name = 'uniqueidentifi
 UNION ALL
 SELECT 'ERROR','D04','FLOAT/REAL column', s.name,
        CAST(o.name + '.' + c.name AS nvarchar(300)),
-       CAST('column type is ' + ty.name COLLATE DATABASE_DEFAULT + ' — prefer DECIMAL/NUMERIC to avoid rounding error' AS nvarchar(400))
+       CAST('column type is ' + ty.name COLLATE DATABASE_DEFAULT + ' - prefer DECIMAL/NUMERIC to avoid rounding error' AS nvarchar(400))
 FROM sys.columns c
 JOIN sys.types ty ON c.user_type_id = ty.user_type_id
 JOIN sys.objects o ON c.object_id = o.object_id
@@ -213,7 +213,7 @@ WHERE o.is_ms_shipped = 0 AND ty.name IN ('float','real')
 UNION ALL
 SELECT 'WARN','D05','Deprecated/proprietary data type', s.name,
        CAST(o.name + '.' + c.name AS nvarchar(300)),
-       CAST('column type is ' + ty.name COLLATE DATABASE_DEFAULT + ' — deprecated or proprietary' AS nvarchar(400))
+       CAST('column type is ' + ty.name COLLATE DATABASE_DEFAULT + ' - deprecated or proprietary' AS nvarchar(400))
 FROM sys.columns c
 JOIN sys.types ty ON c.user_type_id = ty.user_type_id
 JOIN sys.objects o ON c.object_id = o.object_id
@@ -277,18 +277,18 @@ GROUP BY s.name, o.name
 UNION ALL
 SELECT 'WARN','V01','SELECT * in view', s.name,
        CAST(o.name AS nvarchar(300)),
-       CAST('view definition uses SELECT * — enumerate columns explicitly' AS nvarchar(400))
+       CAST('view definition uses SELECT * - enumerate columns explicitly' AS nvarchar(400))
 FROM sys.sql_modules m
 JOIN sys.objects o ON m.object_id = o.object_id
 JOIN sys.schemas s ON o.schema_id = s.schema_id
 WHERE o.is_ms_shipped = 0 AND o.type = 'V'
   AND m.definition LIKE '%SELECT%*%FROM%'
 
-/* ---------- C01: triggers exist — prefer DRI (§6.5) ---------- */
+/* ---------- C01: triggers exist - prefer DRI (§6.5) ---------- */
 UNION ALL
 SELECT 'INFO','C01','Trigger present', s.name,
        CAST(OBJECT_NAME(tr.parent_id) + ' → ' + tr.name AS nvarchar(300)),
-       CAST('trigger defined — prefer declarative referential integrity where possible' AS nvarchar(400))
+       CAST('trigger defined - prefer declarative referential integrity where possible' AS nvarchar(400))
 FROM sys.triggers tr
 JOIN sys.objects o ON tr.parent_id = o.object_id
 JOIN sys.schemas s ON o.schema_id = s.schema_id
@@ -313,7 +313,7 @@ WHERE o.is_ms_shipped = 0
 UNION ALL
 SELECT 'WARN','C03','Legacy outer-join syntax', s.name,
        CAST(o.name AS nvarchar(300)),
-       CAST('module text contains *= or =* — use standard OUTER JOIN' AS nvarchar(400))
+       CAST('module text contains *= or =* - use standard OUTER JOIN' AS nvarchar(400))
 FROM sys.sql_modules m
 JOIN sys.objects o ON m.object_id = o.object_id
 JOIN sys.schemas s ON o.schema_id = s.schema_id
@@ -324,7 +324,7 @@ WHERE o.is_ms_shipped = 0
 UNION ALL
 SELECT 'INFO','C04','Proprietary function in module', s.name,
        CAST(o.name AS nvarchar(300)),
-       CAST('module uses GETDATE()/ISNULL() — prefer CURRENT_TIMESTAMP / COALESCE' AS nvarchar(400))
+       CAST('module uses GETDATE()/ISNULL() - prefer CURRENT_TIMESTAMP / COALESCE' AS nvarchar(400))
 FROM sys.sql_modules m
 JOIN sys.objects o ON m.object_id = o.object_id
 JOIN sys.schemas s ON o.schema_id = s.schema_id
