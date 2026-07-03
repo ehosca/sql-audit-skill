@@ -11,6 +11,21 @@ Programming Style*. The audit is **read-only**: it queries the system catalog an
 
 ## Workflow
 
+### 0. Setup mode (`--store`) — store a SQL password, no audit
+If the invocation includes `--store <server> <user>`, this is first-time credential setup, not an
+audit. **Do not run the audit.** The agent cannot prompt for a password (non-interactive shell), so
+hand the user the exact command to run **themselves** (the `!` prefix runs it in their interactive
+session, where the secure prompt works and the value stays out of the transcript):
+
+```
+! powershell -File "${CLAUDE_PLUGIN_ROOT}/scripts/credential.ps1" store -Server <server> -User <user>
+```
+
+Tell them it prompts securely and stores the password DPAPI-encrypted under
+`sql-audit:<server>:<user>`, then they can run `/sql-audit <server> <database> -U <user>` and the
+audit will pull it from the vault. Storage is per-machine (DPAPI doesn't roam), so this repeats
+once on each new machine. Reference: `references/credential-manager.md`. Then stop.
+
 ### 1. Locate sqlcmd
 Run the detector and capture the resolved path:
 
