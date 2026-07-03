@@ -7,7 +7,7 @@ of Hosca plugins.
 
 | Plugin | Description |
 |--------|-------------|
-| [**sql-audit-skill**](plugins/sql-audit-skill) | Audit a SQL Server database against Joe Celko's *SQL Programming Style* — read-only catalog queries via `sqlcmd`, severity-tiered findings report. |
+| [**sql&#8209;audit&#8209;skill**](plugins/sql-audit-skill) | Audit a SQL Server database against Joe Celko's *SQL Programming Style* — read-only catalog queries via `sqlcmd`, severity-tiered findings report. |
 
 ## Install
 
