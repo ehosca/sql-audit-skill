@@ -6,6 +6,12 @@ celko.txt
 audit-report.md
 *.out
 
+# secrets / local connection settings (never commit)
+*.local.md
+.sqlcmd/
+sqlconfig
+.env
+
 # OS / editor
 Thumbs.db
 .DS_Store

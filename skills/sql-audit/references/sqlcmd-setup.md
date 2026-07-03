@@ -41,6 +41,33 @@ After installing, re-run the detector.
 | `-h -1` | suppress column headers |
 | `-w 65535` | wide output (avoid wrapping) |
 
+## Credentials & connection info
+
+Nothing is persisted by default — connection parameters live only for a single run.
+
+| Item | Where it lives | Notes |
+|------|----------------|-------|
+| Server, database | command args or prompt | non-secret; may be defaulted (see below) |
+| Trusted auth (`-E`) | n/a | **preferred** — no credential handled at all |
+| SQL username (`-U`) | command args or prompt | non-secret |
+| SQL password | `SQLCMDPASSWORD` env var, set in the same shell call | **never** `-P` on the command line, **never** a slash-command argument (both are logged to the transcript / visible in the process list) |
+
+sqlcmd (classic ODBC and go-sqlcmd) reads **`SQLCMDPASSWORD`** automatically, so the secret stays
+out of `argv`, shell history, and the transcript. Scope it to the child process and clear it after:
+
+```powershell
+$env:SQLCMDPASSWORD = (Read-Host 'SQL password' -AsSecureString | ConvertFrom-SecureString -AsPlainText)
+try   { & sqlcmd -S <srv> -d <db> -U <user> -C -N -i audit.sql -s "|" -W -h -1 }
+finally { Remove-Item Env:\SQLCMDPASSWORD -ErrorAction SilentlyContinue }
+```
+
+**Optional persistence (repeat audits).** If you audit the same server often, use go-sqlcmd
+*contexts* instead of retyping — `sqlcmd config add-endpoint` / `add-context` store the endpoint
+(and, on supported builds, an encrypted password) in `%USERPROFILE%\.sqlcmd\sqlconfig`; then run
+`sqlcmd --context <name> -d <db> -i audit.sql`. Alternatively, keep only **non-secret** defaults
+(server, database) in a plugin-local settings file `.claude/sql-audit-skill.local.md` in the
+consuming project — never put the password there. Both are opt-in; the default flow stores nothing.
+
 ## Permissions
 The audit reads catalog views and `sys.sql_modules`. The login needs `VIEW DEFINITION`
 on the target database (or membership giving it) so module text is visible for the

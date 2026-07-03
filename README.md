@@ -61,6 +61,15 @@ Or just ask: *"audit the MyDatabase database on localhost."* The plugin will:
 3. Run [`skills/sql-audit/queries/audit.sql`](skills/sql-audit/queries/audit.sql) (read-only).
 4. Write **`audit-report.md`** grouped by severity, with book citations and fixes.
 
+## Credentials
+
+Nothing is persisted by default — connection details exist only for a single run. Prefer
+**trusted auth** (`-E`); for SQL logins the password is passed via the **`SQLCMDPASSWORD`** env var
+(never `-P` on the command line, never a slash-command argument — both would land in the process
+list and the Claude Code transcript). For repeat audits you can opt into go-sqlcmd *contexts* or
+keep non-secret server/database defaults in a local settings file. See
+[`references/sqlcmd-setup.md`](skills/sql-audit/references/sqlcmd-setup.md#credentials--connection-info).
+
 ## How it works
 
 The audit is a single self-labeling SQL script that `UNION ALL`s every rule into one result set

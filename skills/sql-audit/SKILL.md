@@ -26,22 +26,42 @@ powershell -NoProfile -ExecutionPolicy Bypass -File "${CLAUDE_PLUGIN_ROOT}/scrip
 See `references/sqlcmd-setup.md` for the probed locations and install details.
 
 ### 2. Collect connection parameters
-Ask the user (or read from the `/sql-audit` command arguments):
+Ask the user (or read non-secret values from the `/sql-audit` command arguments):
 
 - **Server** (`-S`), e.g. `localhost`, `localhost\SQLEXPRESS`, `tcp:host,1433`.
 - **Database** (`-d`) — the database to audit.
-- **Auth**: Windows/trusted → `-E`; SQL login → `-U <user> -P <password>`.
+- **Auth**: Windows/trusted → `-E` (**default, no credentials**); SQL login → `-U <user>` + password.
 
-Prefer trusted auth when the user is on the box. Never echo a password back into chat;
-pass it straight to the command.
+**Credential handling — read this before running.** Nothing is persisted; credentials live
+only for the single command invocation. To keep secrets out of the process list, shell history,
+and this transcript:
+
+- **Prefer `-E` (trusted auth)** whenever the user is on the box — then there is no secret at all.
+- **Never accept a password as a slash-command argument** and **never place `-P <pass>` on the
+  command line.** Both would be logged verbatim in the transcript.
+- For SQL auth, pass the password via the **`SQLCMDPASSWORD` environment variable** set in the
+  *same* shell invocation as sqlcmd (sqlcmd reads it automatically). Prompt the user for it with
+  `Read-Host -AsSecureString` if it wasn't already provided out-of-band; never echo it back.
 
 ### 3. Run the audit
-Invoke the single audit script and capture the pipe-delimited result set:
+Invoke the single audit script and capture the pipe-delimited result set.
 
+Trusted auth (preferred):
 ```
-"<sqlcmd-path>" -S <server> -d <database> {-E | -U <user> -P <pass>} -C -N ^
+"<sqlcmd-path>" -S <server> -d <database> -E -C -N ^
   -i "${CLAUDE_PLUGIN_ROOT}/skills/sql-audit/queries/audit.sql" ^
   -s "|" -W -h -1 -w 65535
+```
+
+SQL auth — password via env var, **not** `-P` (PowerShell example; the env var is scoped to the
+child process and cleared after):
+```
+$env:SQLCMDPASSWORD = (prompt securely)
+try {
+  & "<sqlcmd-path>" -S <server> -d <database> -U <user> -C -N `
+    -i "${CLAUDE_PLUGIN_ROOT}/skills/sql-audit/queries/audit.sql" `
+    -s "|" -W -h -1 -w 65535
+} finally { Remove-Item Env:\SQLCMDPASSWORD -ErrorAction SilentlyContinue }
 ```
 
 Flags: `-C` trust server cert, `-N` encrypt, `-s "|"` column separator, `-W` trim
