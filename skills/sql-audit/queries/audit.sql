@@ -97,7 +97,7 @@ SELECT 'WARN','N03','Name requires quoting', s.name,
 FROM sys.objects o
 JOIN sys.schemas s ON o.schema_id = s.schema_id
 WHERE o.is_ms_shipped = 0 AND o.type IN ('U','V','P','FN','TF','IF','TR')
-  AND ( o.name LIKE '% %' OR EXISTS (SELECT 1 FROM reserved r WHERE r.word = UPPER(o.name)) )
+  AND ( o.name LIKE '% %' OR EXISTS (SELECT 1 FROM reserved r WHERE r.word = UPPER(o.name) COLLATE DATABASE_DEFAULT) )
 UNION ALL
 SELECT 'WARN','N03','Name requires quoting', s.name,
        CAST(o.name + '.' + c.name AS nvarchar(300)),
@@ -106,7 +106,7 @@ FROM sys.columns c
 JOIN sys.objects o ON c.object_id = o.object_id
 JOIN sys.schemas s ON o.schema_id = s.schema_id
 WHERE o.is_ms_shipped = 0
-  AND ( c.name LIKE '% %' OR EXISTS (SELECT 1 FROM reserved r WHERE r.word = UPPER(c.name)) )
+  AND ( c.name LIKE '% %' OR EXISTS (SELECT 1 FROM reserved r WHERE r.word = UPPER(c.name) COLLATE DATABASE_DEFAULT) )
 
 /* ---------- N04: Hungarian / descriptive prefix (§1.2.3) ---------- */
 UNION ALL
@@ -137,7 +137,7 @@ UNION ALL
 SELECT 'INFO','N06','Missing ISO-11179 postfix', s.name,
        CAST(o.name AS nvarchar(300)),
        CAST(CAST(COUNT(*) AS varchar(6)) + ' attribute column(s) without recognized postfix: '
-            + LEFT(STRING_AGG(c.name, ', '), 340) AS nvarchar(400))
+            + LEFT(STRING_AGG(c.name COLLATE DATABASE_DEFAULT, ', '), 340) AS nvarchar(400))
 FROM sys.columns c
 JOIN sys.objects o ON c.object_id = o.object_id
 JOIN sys.schemas s ON o.schema_id = s.schema_id
@@ -202,7 +202,7 @@ WHERE o.is_ms_shipped = 0 AND i.is_primary_key = 1 AND ty.name = 'uniqueidentifi
 UNION ALL
 SELECT 'ERROR','D04','FLOAT/REAL column', s.name,
        CAST(o.name + '.' + c.name AS nvarchar(300)),
-       CAST('column type is ' + ty.name + ' — prefer DECIMAL/NUMERIC to avoid rounding error' AS nvarchar(400))
+       CAST('column type is ' + ty.name COLLATE DATABASE_DEFAULT + ' — prefer DECIMAL/NUMERIC to avoid rounding error' AS nvarchar(400))
 FROM sys.columns c
 JOIN sys.types ty ON c.user_type_id = ty.user_type_id
 JOIN sys.objects o ON c.object_id = o.object_id
@@ -213,7 +213,7 @@ WHERE o.is_ms_shipped = 0 AND ty.name IN ('float','real')
 UNION ALL
 SELECT 'WARN','D05','Deprecated/proprietary data type', s.name,
        CAST(o.name + '.' + c.name AS nvarchar(300)),
-       CAST('column type is ' + ty.name + ' — deprecated or proprietary' AS nvarchar(400))
+       CAST('column type is ' + ty.name COLLATE DATABASE_DEFAULT + ' — deprecated or proprietary' AS nvarchar(400))
 FROM sys.columns c
 JOIN sys.types ty ON c.user_type_id = ty.user_type_id
 JOIN sys.objects o ON c.object_id = o.object_id
@@ -240,7 +240,7 @@ WHERE o.is_ms_shipped = 0 AND cc.is_system_named = 1
 UNION ALL
 SELECT 'WARN','D06','System-generated constraint name', s.name,
        CAST(OBJECT_NAME(kc.parent_object_id) + ' → ' + kc.name AS nvarchar(300)),
-       CAST(kc.type_desc + ' has an auto-generated name' AS nvarchar(400))
+       CAST(kc.type_desc COLLATE DATABASE_DEFAULT + ' has an auto-generated name' AS nvarchar(400))
 FROM sys.key_constraints kc
 JOIN sys.objects o ON kc.parent_object_id = o.object_id
 JOIN sys.schemas s ON o.schema_id = s.schema_id
@@ -259,7 +259,7 @@ UNION ALL
 SELECT 'INFO','D07','Numeric column without range CHECK', s.name,
        CAST(o.name AS nvarchar(300)),
        CAST(CAST(COUNT(*) AS varchar(6)) + ' numeric column(s) with no CHECK referencing them: '
-            + LEFT(STRING_AGG(c.name, ', '), 320) AS nvarchar(400))
+            + LEFT(STRING_AGG(c.name COLLATE DATABASE_DEFAULT, ', '), 320) AS nvarchar(400))
 FROM sys.columns c
 JOIN sys.types ty ON c.user_type_id = ty.user_type_id
 JOIN sys.objects o ON c.object_id = o.object_id
@@ -270,7 +270,7 @@ WHERE o.is_ms_shipped = 0 AND o.type = 'U'
   AND NOT EXISTS (
         SELECT 1 FROM sys.check_constraints cc
         WHERE cc.parent_object_id = c.object_id
-          AND cc.definition LIKE '%' + c.name + '%')
+          AND cc.definition LIKE '%' + c.name COLLATE DATABASE_DEFAULT + '%')
 GROUP BY s.name, o.name
 
 /* ---------- V01: SELECT * in view definition (§7.1.1) ---------- */
