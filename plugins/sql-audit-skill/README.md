@@ -5,7 +5,8 @@ A Claude Code plugin that audits a **SQL Server** database against the rules in
 (Morgan-Kaufmann, 2005). It runs **read-only** catalog queries through `sqlcmd` and produces a
 severity-tiered findings report.
 
-Distributed via the [`hosca-plugins`](../..) marketplace.
+Distributed via the [`hosca-plugins`](../..) marketplace. Version history:
+[`CHANGELOG.md`](CHANGELOG.md); release process: [`../../RELEASING.md`](../../RELEASING.md).
 
 ## Install
 

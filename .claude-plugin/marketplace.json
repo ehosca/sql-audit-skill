@@ -1,5 +1,7 @@
 {
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
   "name": "hosca-plugins",
+  "version": "0.1.0",
   "owner": { "name": "erhan", "email": "erhan@hosca.com" },
   "description": "Database and SQL Server tooling plugins.",
   "plugins": [

@@ -16,38 +16,13 @@ SQL Server tooling.
 /plugin install sql-audit-skill@hosca-plugins
 ```
 
-The first command registers this marketplace from the GitHub repo; the second installs the plugin.
-The skill is then invokable as `/sql-audit` — see the
-[plugin README](plugins/sql-audit-skill/README.md) for usage, connection/credential handling, and
-the full rule catalog.
+The first command registers this marketplace; the second installs the plugin (invokable as
+`/sql-audit`). See each plugin's README for usage.
 
-### Local / development install
+## Maintainers
 
-From a clone of this repo:
-
-```
-/plugin marketplace add ./
-/plugin install sql-audit-skill@hosca-plugins
-```
-
-### Updating
-
-```
-/plugin marketplace update hosca-plugins
-/plugin install sql-audit-skill@hosca-plugins
-```
-
-Users receive an update only when the plugin's `version` (in
-[`plugins/sql-audit-skill/.claude-plugin/plugin.json`](plugins/sql-audit-skill/.claude-plugin/plugin.json))
-is bumped. Omitting `version` instead tracks every commit SHA as a new version.
-
-## Layout
-
-```
-.claude-plugin/marketplace.json   marketplace catalog (name: hosca-plugins)
-plugins/
-  sql-audit-skill/                the plugin (own .claude-plugin/plugin.json, skills, commands, scripts, tests)
-```
+Versioning and release process: [`RELEASING.md`](RELEASING.md). Changelog:
+[`CHANGELOG.md`](CHANGELOG.md).
 
 ## License
 
