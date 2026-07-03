@@ -67,10 +67,22 @@ Or just ask: *"audit the MyDatabase database on localhost."* The plugin will:
 
 ## Credentials
 
-Nothing is persisted by default — connection details exist only for a single run. Prefer
-**trusted auth** (`-E`); for SQL logins the password is passed via the **`SQLCMDPASSWORD`** env var
-(never `-P` on the command line, never a slash-command argument — both would land in the process
-list and the Claude Code transcript). See
+Prefer **trusted auth** (`-E`) — no secret at all. For **SQL logins**, the password is stored once
+in **Windows Credential Manager** (DPAPI-encrypted, user-scoped) and read at run time into the
+**`SQLCMDPASSWORD`** env var for a single sqlcmd call — never `-P` on the command line, never a
+slash-command argument, never typed into chat (all of which would leak to the process list / the
+Claude Code transcript). This works with the classic ODBC `sqlcmd` too — no go-sqlcmd required.
+
+```
+# store once (secure prompt; run it yourself so the agent never sees the password)
+powershell -File scripts/credential.ps1 store -Server db.example.com -User auditor
+# then just audit — the plugin reads it from the vault
+/sql-audit db.example.com MyDatabase -U auditor
+```
+
+The helper (`scripts/credential.ps1`) uses the Win32 `CredWrite`/`CredRead` APIs via P/Invoke — no
+third-party modules. Full store/get/rotate/delete flow:
+[`references/credential-manager.md`](skills/sql-audit/references/credential-manager.md). See also
 [`references/sqlcmd-setup.md`](skills/sql-audit/references/sqlcmd-setup.md#credentials--connection-info).
 
 ### Reusable connections (go-sqlcmd contexts)

@@ -14,9 +14,12 @@ Arguments (optional — ask for anything missing): `$ARGUMENTS`
   unavailable — offer to `winget install sqlcmd` or fall back to the per-run flow.
 
 **Do not accept a password in these arguments** — they are logged in the transcript. For SQL
-auth, the skill prompts for the password securely and passes it via the `SQLCMDPASSWORD`
-environment variable, never on the command line. Prefer `-E` (trusted auth) when possible.
-Nothing is persisted; credentials exist only for the single run.
+auth (`-U <user>`), the skill resolves the password from **Windows Credential Manager** via
+`scripts/credential.ps1 get` into the `SQLCMDPASSWORD` env var for a single sqlcmd call. If it
+isn't stored yet, ask the user to store it once themselves (never in chat):
+`! powershell -File "${CLAUDE_PLUGIN_ROOT}/scripts/credential.ps1" store -Server <s> -User <u>`.
+Prefer `-E` (trusted auth) when possible. `--context <name>` uses a saved go-sqlcmd context
+instead. Credentials at rest are DPAPI-encrypted; the command line never carries a password.
 
 Use the **sql-audit** skill. Steps:
 1. Run `scripts/detect-sqlcmd.ps1` to locate sqlcmd; if missing, show its guidance and

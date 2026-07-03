@@ -43,9 +43,15 @@ and this transcript:
 - **Prefer `-E` (trusted auth)** whenever the user is on the box — then there is no secret at all.
 - **Never accept a password as a slash-command argument** and **never place `-P <pass>` on the
   command line.** Both would be logged verbatim in the transcript.
-- For SQL auth, pass the password via the **`SQLCMDPASSWORD` environment variable** set in the
-  *same* shell invocation as sqlcmd (sqlcmd reads it automatically). Prompt the user for it with
-  `Read-Host -AsSecureString` if it wasn't already provided out-of-band; never echo it back.
+- **You (the agent) cannot prompt for a password.** The shell tools are non-interactive and don't
+  persist state between calls, so a live `Read-Host` hangs, and anything the user types in chat is
+  captured in the transcript. So for **SQL auth**, resolve the password from **Windows Credential
+  Manager** (`scripts/credential.ps1`), read into `SQLCMDPASSWORD` for the single sqlcmd call:
+    - If a credential exists, `scripts/credential.ps1 get -Server <s> -User <u>` returns it.
+    - If not (or it errors "Element not found"), tell the user to store it once **themselves** via
+      the `!` prefix (never in chat), then retry:
+      `! powershell -File "${CLAUDE_PLUGIN_ROOT}/scripts/credential.ps1" store -Server <s> -User <u>`
+    - See `references/credential-manager.md`. (go-sqlcmd contexts, step 2b, are an alternative.)
 
 ### 2b. Reusable connections with go-sqlcmd contexts (preferred for repeat audits)
 Only when the detector reported `"supportsContexts": true`. A **context** is a named saved
@@ -88,16 +94,18 @@ Trusted auth (preferred):
   -s "|" -W -h -1 -w 65535
 ```
 
-SQL auth — password via env var, **not** `-P` (PowerShell example; the env var is scoped to the
-child process and cleared after):
+SQL auth — password pulled from Windows Credential Manager into the env var for one call, then
+cleared (never `-P`, never typed in chat):
 ```
-$env:SQLCMDPASSWORD = (prompt securely)
+$env:SQLCMDPASSWORD = & "${CLAUDE_PLUGIN_ROOT}/scripts/credential.ps1" get -Server <server> -User <user>
 try {
   & "<sqlcmd-path>" -S <server> -d <database> -U <user> -C -N `
     -i "${CLAUDE_PLUGIN_ROOT}/skills/sql-audit/queries/audit.sql" `
     -s "|" -W -h -1 -w 65535
 } finally { Remove-Item Env:\SQLCMDPASSWORD -ErrorAction SilentlyContinue }
 ```
+If `get` errors, the credential isn't stored yet — have the user store it via the `!` prefix
+(see step 2). Reference: `references/credential-manager.md`.
 
 Saved go-sqlcmd context (from step 2b) — no credentials on the command line, encrypted
 password used automatically:

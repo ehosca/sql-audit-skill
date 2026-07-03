@@ -52,16 +52,23 @@ Nothing is persisted by default — connection parameters live only for a single
 | Server, database | command args or prompt | non-secret; may be defaulted (see below) |
 | Trusted auth (`-E`) | n/a | **preferred** — no credential handled at all |
 | SQL username (`-U`) | command args or prompt | non-secret |
-| SQL password | `SQLCMDPASSWORD` env var, set in the same shell call | **never** `-P` on the command line, **never** a slash-command argument (both are logged to the transcript / visible in the process list) |
+| SQL password | **Windows Credential Manager** (DPAPI), read into `SQLCMDPASSWORD` at run time | **never** `-P` on the command line, **never** a slash-command argument, **never** typed in chat |
 
-sqlcmd (classic ODBC and go-sqlcmd) reads **`SQLCMDPASSWORD`** automatically, so the secret stays
-out of `argv`, shell history, and the transcript. Scope it to the child process and clear it after:
+**Preferred: Windows Credential Manager.** Store the password once (DPAPI-encrypted, user-scoped);
+the audit reads it into `SQLCMDPASSWORD` for a single sqlcmd call. Works with classic ODBC sqlcmd
+— no go-sqlcmd needed. Full flow in [`credential-manager.md`](credential-manager.md).
 
 ```powershell
-$env:SQLCMDPASSWORD = (Read-Host 'SQL password' -AsSecureString | ConvertFrom-SecureString -AsPlainText)
+# one-time store (secure prompt):
+powershell -File scripts/credential.ps1 store -Server <srv> -User <user>
+# at audit time:
+$env:SQLCMDPASSWORD = & scripts/credential.ps1 get -Server <srv> -User <user>
 try   { & sqlcmd -S <srv> -d <db> -U <user> -C -N -i audit.sql -s "|" -W -h -1 }
 finally { Remove-Item Env:\SQLCMDPASSWORD -ErrorAction SilentlyContinue }
 ```
+
+sqlcmd (classic ODBC and go-sqlcmd) reads **`SQLCMDPASSWORD`** automatically, so the secret stays
+out of `argv`, shell history, and the transcript.
 
 **Optional persistence (repeat audits).** If the detected binary is **go-sqlcmd**
 (`"supportsContexts": true`), save a named **context** instead of retyping — endpoint + user are
